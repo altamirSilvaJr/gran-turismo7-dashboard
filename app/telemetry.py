@@ -1,17 +1,22 @@
 import threading
-import struct
-from datetime import datetime
 from typing import Optional
 
 from infrastructure.udp_client import GT7UdpClient
 from infrastructure.crypto import decrypt
 from infrastructure.packet_parser import parse_telemetry
 from domain.game_state import GameState
+from app.services.track_service import TrackService
 
 class TelemetryService:
-    def __init__(self, client: GT7UdpClient, state: GameState):
+    def __init__(
+        self,
+        client: GT7UdpClient,
+        state: GameState,
+        track_service: Optional[TrackService] = None,
+    ):
         self.client = client
         self.state = state
+        self.track_service = track_service
         self._running = False
         self._thread: Optional[threading.Thread] = None
 
@@ -34,6 +39,8 @@ class TelemetryService:
                 rpm_warn=data.rpm_warn,
                 rpm_rev_limiter=data.rpm_rev_limiter,
                 fuel_ratio=data.fuel,
+                fuel=data.fuel,
+                fuel_capacity=data.fuel_capacity,
                 gear=data.gear,
                 suggested_gear=data.suggested_gear,
                 speed_kmh=data.speed_kmh,
@@ -44,24 +51,16 @@ class TelemetryService:
                 current_position=data.current_position,
                 total_cars=data.total_cars,
                 )
-
-            ts = datetime.now().isoformat(timespec="milliseconds")
-
-            thr_s = f"{data.throttle:.3f}"
-            br_s = f"{data.brake:.3f}"
-            spd_s = f"{data.speed_kmh:.1f}"
-            str_s = f"{data.steering:.3f}" if data.steering is not None else "N/A"
-            rpm_s = f"{data.rpm}" if data.rpm is not None else "N/A"
-            gear_s = f"{data.gear}" if data.gear is not None else "N/A"
-            fuel_s = f"{data.fuel:.2f}" if data.fuel is not None else "N/A"
-            first16 = packet[:16].hex()
-
-            # print(
-            #     f"[{ts}] thr={thr_s} br={br_s} spd={spd_s} "
-            #     f"str={str_s} rpm={rpm_s} gear={gear_s} fuel={fuel_s} "
-            #     f"len={len(packet)} first16={first16}",
-            #     flush=True,
-            # )
+            if self.track_service is not None and data.physics is not None:
+                self.track_service.ingest_position(
+                    x=data.physics.position_x,
+                    z=data.physics.position_z,
+                    current_lap=data.current_lap,
+                    last_lap_time=data.last_lap,
+                    current_fuel=data.fuel,
+                    throttle=data.throttle,
+                    brake=data.brake,
+                )
 
     def start(self):
         if self._running:

@@ -52,12 +52,14 @@ class TelemetryData:
     gear: Optional[int] = None
     suggested_gear: Optional[int] = None
     fuel: Optional[float] = None
+    fuel_capacity: Optional[float] = None
     best_lap: Optional[str] = None
     last_lap: Optional[str] = None
     current_lap: Optional[int] = None
     total_laps: Optional[int] = None
     current_position: Optional[int] = None
     total_cars: Optional[int] = None
+    physics: Optional[PhysicsData] = None
 
 def ms_to_time(ms: int, include_hours: bool = False) -> str:
     """
@@ -105,8 +107,19 @@ def parse_telemetry(packet: bytes) -> TelemetryData:
     #############
     speed_kmh = 0.0
     rpm = None
+    rpm_warn = None
+    rpm_rev_limiter = None
     current_gear = None
+    suggested_gear = None
     fuel = None
+    fuel_capacity = None
+    best_lap = None
+    last_lap = None
+    current_lap = None
+    total_laps = None
+    current_position = None
+    total_cars = None
+    physics_data = None
     if _has_bytes(packet, 0x4C, 4):
         speed_mps = struct.unpack_from("<f", packet, 0x4C)[0]
         speed_kmh = speed_mps * 3.6
@@ -158,7 +171,7 @@ def parse_telemetry(packet: bytes) -> TelemetryData:
 
     if _has_bytes(packet, 0x48, 4):
         fuel_capacity = struct.unpack_from("<f", packet, 0x48)[0]
-        # print(f"Fuel Capacity: {fuel_capacity:.2f} %")
+        # print(f"Fuel Capacity: {fuel_capacity} %")
 
     ##############
     # Laps Infos #
@@ -255,10 +268,12 @@ def parse_telemetry(packet: bytes) -> TelemetryData:
         gear=current_gear,
         suggested_gear=suggested_gear,
         fuel=fuel,
+        fuel_capacity=fuel_capacity,
         best_lap=best_lap,
         last_lap=last_lap,
         current_lap=current_lap,
         total_laps=total_laps,
         current_position=current_position,
         total_cars=total_cars,
+        physics=physics_data,
     )

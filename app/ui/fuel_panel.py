@@ -9,6 +9,8 @@ class FuelPanel(QtWidgets.QWidget):
 
         self.total_segments = 10
         self.fuel_percent = 10.0
+        self.last_lap_consume = None
+        self.remaining_laps = None
 
         self.blink_state = True
         self.blink_timer = QtCore.QTimer()
@@ -136,7 +138,11 @@ class FuelPanel(QtWidgets.QWidget):
 
         painter.setFont(QtGui.QFont("Arial", 28, QtGui.QFont.Bold))
         painter.setPen(QtGui.QColor(255, 255, 255))
-        painter.drawText(right_x, margin_top + 40, f"{self.fuel_percent:.1f}%")
+        if self.last_lap_consume is None:
+            consume_text = "--"
+        else:
+            consume_text = f"{self.last_lap_consume:.2f}"
+        painter.drawText(right_x, margin_top + 40, consume_text)
 
         painter.setFont(QtGui.QFont("Arial", 10))
         painter.setPen(QtGui.QColor(170, 180, 255))
@@ -144,4 +150,8 @@ class FuelPanel(QtWidgets.QWidget):
 
         painter.setFont(QtGui.QFont("Arial", 36, QtGui.QFont.Bold))
         painter.setPen(QtGui.QColor(255, 255, 255))
-        painter.drawText(right_x+40, margin_top + 115, "20")
+        if self.remaining_laps is None:
+            remaining_text = "--"
+        else:
+            remaining_text = f"{self.remaining_laps:.1f}"
+        painter.drawText(right_x + 28, margin_top + 115, remaining_text)
